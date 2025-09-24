@@ -1,21 +1,14 @@
 # Projet Football NoSQL
 
-Application complète de démonstration des meilleure### 8. **Clés de Partition Composites**
-- **Accès Multi-Dimensionnel** : Top transferts basés sur les saisons
-- **Filtrage Efficace** : Compétitions d'équipe par équipe et saison
-- **Flexibilité des Requêtes** : Support pour différents modèles d'accès
+Application complète de démonstration des meilleures pratiques NoSQL utilisant Cassandra avec des données de football. Ce projet illustre la modélisation de données time-series, la pagination, les TTL, les tombstones, la pré-agrégation et d'autres concepts clés du NoSQL.
 
-### 9. **Recherche Textuelle et Filtrage**
-- **Recherche par Nom** : Fonctionnalité d'autocomplétion pour la recherche d'équipes
-- **Filtrage Côté Application** : Alternative aux index secondaires pour des datasets de taille moyenne
-- **Optimisation des Performances** : Balance entre flexibilité de recherche et performance Cassandra
-- **Interface Utilisateur** : Amélioration de l'expérience utilisateur avec des suggestions en temps réelatiques NoSQL utilisant Cassandra avec des données de football. Ce projet illustre la modélisation de données time-series, la pagination, les TTL, les tombstones, la pré-agrégation et d'autres concepts clés du NoSQL.
+> **📂 Note sur les Données :** Les fichiers CSV (>100MB) ne sont pas inclus dans ce repository GitHub en raison des limites de taille de fichier. Vous devez télécharger séparément les datasets de football et les placer dans le dossier `data/` pour faire fonctionner l'application.
 
 ## Structure du Projet
 
 ```
 football-nosql/
-├── data/                               # Fichiers CSV de données (lien vers ../data/)
+├── data/                               # Fichiers CSV de données (non inclus - voir note ci-dessus)
 ├── backend/
 │   ├── requirements.txt                # Dépendances Python
 │   ├── settings.py                     # Configuration et mappages CSV
@@ -90,6 +83,12 @@ football-nosql/
 - **Filtrage Efficace** : Compétitions d'équipe par équipe et saison
 - **Flexibilité des Requêtes** : Support pour différents modèles d'accès
 
+### 8. **Recherche Textuelle et Filtrage**
+- **Recherche par Nom** : Fonctionnalité d'autocomplétion pour la recherche d'équipes
+- **Filtrage Côté Application** : Alternative aux index secondaires pour des datasets de taille moyenne
+- **Optimisation des Performances** : Balance entre flexibilité de recherche et performance Cassandra
+- **Interface Utilisateur** : Amélioration de l'expérience utilisateur avec des suggestions en temps réel
+
 ## Prérequis
 
 - **Windows 10/11** avec PowerShell
@@ -97,6 +96,7 @@ football-nosql/
 - **Cassandra 4.1+** fonctionnant sur `127.0.0.1:9042` (via WSL ou natif)
 - **Node.js 16+** pour le développement frontend
 - **Git** pour le clonage (si nécessaire)
+- **Datasets CSV** : Fichiers de données de football (non inclus dans ce repo)
 
 ### Configuration Cassandra (WSL)
 ```bash
@@ -110,6 +110,24 @@ sudo ./bin/cassandra -f
 ```
 
 ## Installation et Configuration
+
+### 0. Obtenir les Données
+```powershell
+# Les fichiers CSV requis (non inclus dans Git) :
+# - player_injuries.csv
+# - player_latest_market_value.csv  
+# - player_market_value.csv
+# - player_national_performances.csv
+# - player_performances.csv (150MB)
+# - player_profiles.csv
+# - player_teammates_played_with.csv
+# - team_children.csv
+# - team_competitions_seasons.csv
+# - team_details.csv
+# - transfer_history.csv (77MB)
+
+# Placer ces fichiers dans : football-nosql/data/
+```
 
 ### 1. Installer les Dépendances Python
 ```powershell
@@ -231,6 +249,9 @@ npm run dev
 - `GET /health` - Contrôle de santé
 - `GET /players/by-team/{team_id}` - Effectif d'équipe
 
+### Recherche d'Équipes
+- `GET /teams/search?q={query}&limit={limit}` - Recherche d'équipes par nom avec autocomplétion
+
 ### Données des Joueurs
 - `GET /player/{player_id}/profile` - Profil du joueur
 - `GET /player/{player_id}/market/latest` - Dernière valeur marchande
@@ -256,9 +277,6 @@ npm run dev
 - `GET /team/{team_id}/details` - Informations sur l'équipe
 - `GET /team/{team_id}/children` - Hiérarchie d'équipe
 - `GET /team/{team_id}/competitions?season=YYYY-YYYY` - Compétitions d'équipe
-
-### Recherche d'Équipes
-- `GET /teams/search?q={query}&limit={limit}` - Recherche d'équipes par nom avec autocomplétion
 
 ## Points Forts du Schéma de Base de Données
 
@@ -359,16 +377,17 @@ top_transfers_by_season (season, fee_eur DESC, player_id, ...)
 
 ## Objectifs Pédagogiques Atteints
 
- **Modélisation Time-Series** : Valeurs marchandes, transferts, blessures avec clustering approprié  
- **Pagination** : Pagination basée sur tokens avec paging_state  
- **Pré-Agrégation** : Classements des top transferts par saison  
- **Démonstration TTL** : Données temporaires avec expiration automatique  
- **Sensibilisation aux Tombstones** : Opérations DELETE et leurs implications  
- **Conception Orientée Requête** : Tables conçues pour des modèles d'accès spécifiques  
- **Dénormalisation** : Duplication de données pour les performances  
- **Opérations par Lot** : Chargement efficace de données en vrac  
- **Opérations CRUD** : Exemples complets Create, Read, Update, Delete  
- **Schéma Réel** : Conceptions de tables prêtes pour la production  
+✅ **Modélisation Time-Series** : Valeurs marchandes, transferts, blessures avec clustering approprié  
+✅ **Pagination** : Pagination basée sur tokens avec paging_state  
+✅ **Pré-Agrégation** : Classements des top transferts par saison  
+✅ **Démonstration TTL** : Données temporaires avec expiration automatique  
+✅ **Sensibilisation aux Tombstones** : Opérations DELETE et leurs implications  
+✅ **Conception Orientée Requête** : Tables conçues pour des modèles d'accès spécifiques  
+✅ **Dénormalisation** : Duplication de données pour les performances  
+✅ **Opérations par Lot** : Chargement efficace de données en vrac  
+✅ **Opérations CRUD** : Exemples complets Create, Read, Update, Delete  
+✅ **Schéma Réel** : Conceptions de tables prêtes pour la production  
+✅ **Recherche Intelligente** : Autocomplétion et recherche textuelle pour une meilleure UX  
 
 ## Équipe
 
