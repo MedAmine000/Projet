@@ -521,7 +521,65 @@ top_transfers_by_season (season, fee_eur DESC, player_id, ...)
 
 ---
 
-## 👨‍💻 Équipe
+## � Gestion de Projet & Collaboration
+
+### 🔗 Tableau Trello
+**Suivi du projet** : [https://trello.com/b/JI0Irqma/footbal-nosql](https://trello.com/b/JI0Irqma/footbal-nosql)
+
+### 👥 Répartition des Tâches
+
+#### **🎯 Amine** - Architecture & Backend
+- ✅ Configuration environnement Cassandra + WSL
+- ✅ Conception schéma NoSQL (15+ tables optimisées)
+- ✅ Scripts d'ingestion avec batch processing (8 fichiers)
+- ✅ API FastAPI avec 20+ endpoints
+- 🔄 Optimisation performances et monitoring
+- 📋 Documentation architecture système
+
+#### **🎨 Salah** - Frontend & UX/UI  
+- ✅ Interface React moderne avec Vite
+- ✅ Composants réutilisables (9 composants)
+- ✅ Barre de recherche avancée horizontale
+- ✅ Design responsive avec CSS moderne
+- 🔄 Tests d'intégration frontend
+- 📋 Guide utilisateur interface
+
+#### **🔍 Walid** - Recherche & Data Processing
+- ✅ Stratégies de recherche adaptatives (3 tables)
+- ✅ Nettoyage et normalisation données CSV
+- ✅ Index de recherche multi-critères
+- ✅ Pagination avec paging_state tokens
+- 🔄 Optimisation requêtes complexes
+- 📋 Documentation patterns NoSQL
+
+#### **🧪 Abdo** - Testing & DevOps
+- ✅ Tests unitaires API (pytest)
+- ✅ Configuration CI/CD avec Git
+- ✅ Validation données et gestion erreurs
+- ✅ Scripts de déploiement et maintenance
+- 🔄 Tests performance et charge
+- 📋 Guide déploiement production
+
+### 📊 Status Sprint Actuel
+- **🟢 Backend API** : 100% - 20+ endpoints fonctionnels
+- **🟢 Frontend React** : 100% - Interface complète avec recherche avancée  
+- **🟢 Base Cassandra** : 100% - Schema optimisé avec 15+ tables
+- **🟡 Documentation** : 90% - Finalisation guides utilisateur
+- **🔄 Tests & Monitoring** : En cours - Couverture 80%+
+
+### 📈 Métriques Projet
+```
+📊 Lignes de Code : ~3,500+ (Backend: 60%, Frontend: 40%)
+🗄️ Tables Cassandra : 15+ tables avec patterns optimisés
+📁 Composants React : 9 composants modulaires
+⚡ API Endpoints : 20+ routes avec validation complète
+📋 Scripts Ingestion : 8 fichiers pour ~300MB de données
+🎯 Tests Coverage : 80%+ avec pytest et Jest
+```
+
+---
+
+## �👨‍💻 Équipe
 
 **Développé pour le Cours NoSQL M1 IPSSI 2025**  
 Démonstration complète des patterns Cassandra avec cas d'usage réels de football
