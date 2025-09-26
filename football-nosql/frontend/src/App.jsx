@@ -7,6 +7,7 @@ import PlayerTransfers from './components/PlayerTransfers';
 import PlayerInjuries from './components/PlayerInjuries';
 import PlayerPerformances from './components/PlayerPerformances';
 import Teammates from './components/Teammates';
+import AdvancedSearchBar from './components/AdvancedSearchBar';
 
 function App() {
   const [selectedTeam, setSelectedTeam] = useState(null);
@@ -22,6 +23,26 @@ function App() {
   const handlePlayerSelect = (player) => {
     setSelectedPlayer(player);
     setActiveTab('profile');
+  };
+
+  const handleAdvancedPlayerSelect = async (playerId) => {
+    try {
+      // Récupérer les détails du joueur depuis l'API
+      const response = await fetch(`http://127.0.0.1:8000/player/${playerId}/profile`);
+      const playerData = await response.json();
+      
+      setSelectedPlayer({
+        player_id: playerId,
+        player_name: playerData.player_name,
+        position: playerData.main_position,
+        nationality: playerData.nationality
+      });
+      
+      // Ne pas changer l'équipe sélectionnée, juste le joueur
+      setActiveTab('profile');
+    } catch (error) {
+      console.error('Erreur lors de la récupération du profil joueur:', error);
+    }
   };
 
   const tabs = [
@@ -43,20 +64,15 @@ function App() {
         <p>Démonstration des meilleures pratiques NoSQL avec Cassandra</p>
       </header>
 
-      {/* NoSQL Cheatsheet */}
-      <div className="nosql-cheatsheet">
-        <h3>Concepts NoSQL Démontrés</h3>
-        <p><strong>Clés de Partition :</strong> player_id, team_id (recherches rapides) | <strong>Clustering :</strong> Ordre DESC pour time-series</p>
-        <p><strong>Dénormalisation :</strong> Plusieurs tables par entité | <strong>Pré-agrégation :</strong> Top transferts par saison</p>
-        <p><strong>Pagination :</strong> paging_state pour gros datasets | <strong>TTL :</strong> Données temporaires avec expiration</p>
-        <p><strong>Tombstones :</strong> DELETE crée des marqueurs (attention) | <strong>Vues Matérialisées :</strong> Dernières valeurs marchandes</p>
-      </div>
+      {/* Advanced Search Bar */}
+      <AdvancedSearchBar onPlayerSelect={handleAdvancedPlayerSelect} />
 
       {/* Main Layout */}
       <div className="main-layout">
         {/* Sidebar */}
         <div className="sidebar">
           <TeamPicker onTeamSelect={handleTeamSelect} />
+          
           {selectedTeam && (
             <PlayersList
               teamId={selectedTeam}

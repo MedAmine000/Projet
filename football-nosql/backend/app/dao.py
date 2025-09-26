@@ -240,6 +240,51 @@ class CassandraDAO:
                   matches_together int,
                   PRIMARY KEY (player_id, teammate_id)
                 )
+                """,
+                
+                # Advanced search tables
+                """
+                CREATE TABLE IF NOT EXISTS players_by_position (
+                  position text,
+                  player_id text,
+                  player_name text,
+                  nationality text,
+                  team_id text,
+                  team_name text,
+                  birth_date date,
+                  market_value_eur bigint,
+                  PRIMARY KEY (position, player_id)
+                )
+                """,
+                
+                """
+                CREATE TABLE IF NOT EXISTS players_by_nationality (
+                  nationality text,
+                  player_id text,
+                  player_name text,
+                  position text,
+                  team_id text,
+                  team_name text,
+                  birth_date date,
+                  market_value_eur bigint,
+                  PRIMARY KEY (nationality, player_id)
+                )
+                """,
+                
+                """
+                CREATE TABLE IF NOT EXISTS players_search_index (
+                  search_partition text,
+                  player_name_lower text,
+                  player_id text,
+                  player_name text,
+                  position text,
+                  nationality text,
+                  team_id text,
+                  team_name text,
+                  birth_date date,
+                  market_value_eur bigint,
+                  PRIMARY KEY (search_partition, player_name_lower, player_id)
+                ) WITH CLUSTERING ORDER BY (player_name_lower ASC, player_id ASC)
                 """
             ]
             
@@ -373,6 +418,25 @@ class CassandraDAO:
                 INSERT INTO teammates_by_player 
                 (player_id, teammate_id, teammate_name, matches_together)
                 VALUES (?, ?, ?, ?)
+            """,
+            
+            # Advanced search tables
+            'insert_player_by_position': """
+                INSERT INTO players_by_position 
+                (position, player_id, player_name, nationality, team_id, team_name, birth_date, market_value_eur)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            
+            'insert_player_by_nationality': """
+                INSERT INTO players_by_nationality 
+                (nationality, player_id, player_name, position, team_id, team_name, birth_date, market_value_eur)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            
+            'insert_player_search_index': """
+                INSERT INTO players_search_index 
+                (search_partition, player_name_lower, player_id, player_name, position, nationality, team_id, team_name, birth_date, market_value_eur)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """
         }
         

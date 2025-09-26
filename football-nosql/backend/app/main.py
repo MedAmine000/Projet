@@ -748,6 +748,232 @@ async def get_team_competitions(
         logger.error(f"Error getting team competitions: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
+# ========================================
+# ADVANCED PLAYER SEARCH
+# ========================================
+
+class AdvancedSearchFilters(BaseModel):
+    name: Optional[str] = None
+    position: Optional[str] = None 
+    nationality: Optional[str] = None
+    team_id: Optional[str] = None
+    min_age: Optional[int] = None
+    max_age: Optional[int] = None
+    min_market_value: Optional[int] = None
+    max_market_value: Optional[int] = None
+
+@app.post("/players/search")
+async def advanced_player_search(
+    filters: AdvancedSearchFilters,
+    page_size: int = Query(20, ge=1, le=100),
+    paging_state: Optional[str] = Query(None)
+):
+    """
+    Recherche avancée de joueurs avec filtres multiples
+    Démontre différentes stratégies de requête NoSQL selon les filtres actifs
+    """
+    try:
+        results = []
+        current_year = datetime.now().year
+        
+        # Stratégie 1: Recherche par position (utilise la partition key optimisée)
+        if filters.position and not filters.nationality:
+            query = """
+            SELECT player_id, player_name, position, nationality, team_id, team_name, 
+                   birth_date, market_value_eur
+            FROM players_by_position 
+            WHERE position = ?
+            """
+            
+            rows, next_paging_state = dao.get_paginated_results(
+                query, (filters.position,), page_size * 3, paging_state  # Get more to filter
+            )
+            
+        # Stratégie 2: Recherche par nationalité (utilise la partition key optimisée)  
+        elif filters.nationality and not filters.position:
+            query = """
+            SELECT player_id, player_name, position, nationality, team_id, team_name, 
+                   birth_date, market_value_eur
+            FROM players_by_nationality 
+            WHERE nationality = ?
+            """
+            
+            rows, next_paging_state = dao.get_paginated_results(
+                query, (filters.nationality,), page_size * 3, paging_state
+            )
+            
+        # Stratégie 3: Recherche par nom (utilise l'index de recherche)
+        elif filters.name:
+            name_lower = filters.name.lower()
+            query = """
+            SELECT player_id, player_name, position, nationality, team_id, team_name, 
+                   birth_date, market_value_eur
+            FROM players_search_index 
+            WHERE search_partition = ? AND player_name_lower >= ? AND player_name_lower < ?
+            """
+            
+            # Create range for prefix search
+            name_end = name_lower[:-1] + chr(ord(name_lower[-1]) + 1) if name_lower else 'z'
+            
+            rows, next_paging_state = dao.get_paginated_results(
+                query, ('all', name_lower, name_end), page_size * 3, paging_state
+            )
+            
+        # Stratégie 4: Recherche générale (scan avec filtrage côté application)
+        else:
+            query = """
+            SELECT player_id, player_name, position, nationality, team_id, team_name, 
+                   birth_date, market_value_eur
+            FROM players_search_index 
+            WHERE search_partition = ?
+            """
+            
+            rows, next_paging_state = dao.get_paginated_results(
+                query, ('all',), page_size * 5, paging_state  # Get more for filtering
+            )
+        
+        # Application des filtres côté client
+        filtered_results = []
+        
+        for row in rows:
+            # Filtrage par nom (si pas utilisé comme partition key)
+            if filters.name and filters.name.lower() not in (row.player_name or '').lower():
+                continue
+                
+            # Filtrage par position (si pas utilisé comme partition key)
+            if filters.position and row.position != filters.position:
+                continue
+                
+            # Filtrage par nationalité (si pas utilisé comme partition key)
+            if filters.nationality and row.nationality != filters.nationality:
+                continue
+                
+            # Filtrage par équipe
+            if filters.team_id and row.team_id != filters.team_id:
+                continue
+                
+            # Filtrage par âge
+            age = None
+            if row.birth_date:
+                try:
+                    # Gérer différents types de dates (datetime.date, datetime.datetime, etc.)
+                    if hasattr(row.birth_date, 'year'):
+                        birth_year = row.birth_date.year
+                    elif hasattr(row.birth_date, 'date'):
+                        birth_year = row.birth_date.date().year
+                    else:
+                        # Essayer de convertir en date si c'est une string
+                        birth_year = int(str(row.birth_date)[:4])
+                    
+                    age = current_year - birth_year
+                    
+                    if filters.min_age and age < filters.min_age:
+                        continue
+                    if filters.max_age and age > filters.max_age:
+                        continue
+                except (AttributeError, ValueError, TypeError):
+                    # Si on ne peut pas calculer l'âge, on ignore ce filtre
+                    if filters.min_age or filters.max_age:
+                        continue
+                    
+            elif filters.min_age or filters.max_age:
+                # Pas de date de naissance mais filtre d'âge demandé -> exclure
+                continue
+                    
+            # Filtrage par valeur marchande
+            if filters.min_market_value and (not row.market_value_eur or row.market_value_eur < filters.min_market_value):
+                continue
+            if filters.max_market_value and (not row.market_value_eur or row.market_value_eur > filters.max_market_value):
+                continue
+            
+            # Formatage de la date de naissance
+            birth_date_str = None
+            if row.birth_date:
+                try:
+                    if hasattr(row.birth_date, 'isoformat'):
+                        birth_date_str = row.birth_date.isoformat()
+                    else:
+                        # Pour les objets Date de Cassandra, convertir en string
+                        birth_date_str = str(row.birth_date)
+                except (AttributeError, TypeError):
+                    birth_date_str = str(row.birth_date)
+            
+            filtered_results.append({
+                "player_id": row.player_id,
+                "player_name": row.player_name,
+                "position": row.position,
+                "nationality": row.nationality,
+                "team_id": row.team_id,
+                "team_name": row.team_name,
+                "age": age,
+                "birth_date": birth_date_str,
+                "market_value_eur": row.market_value_eur
+            })
+            
+            # Limite des résultats après filtrage
+            if len(filtered_results) >= page_size:
+                break
+        
+        return PaginatedResponse(
+            data=filtered_results,
+            paging_state=next_paging_state if len(filtered_results) == page_size else None,
+            has_more=next_paging_state is not None and len(filtered_results) == page_size
+        )
+        
+    except Exception as e:
+        logger.error(f"Error in advanced search: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/players/search/suggestions")
+async def get_search_suggestions():
+    """
+    Récupère les suggestions pour la recherche avancée (positions, nationalités, équipes)
+    """
+    try:
+        suggestions = {
+            "positions": [],
+            "nationalities": [],
+            "teams": []
+        }
+        
+        # Positions populaires - utilise une table avec position comme clé de partition
+        pos_query = """
+        SELECT position FROM players_by_position LIMIT 1000
+        """
+        pos_result = dao.session.execute(dao.session.prepare(pos_query))
+        positions_set = set()
+        for row in pos_result:
+            if row.position and len(positions_set) < 50:
+                positions_set.add(row.position)
+        suggestions["positions"] = sorted(list(positions_set))
+        
+        # Nationalités populaires - utilise une table avec nationality comme clé de partition
+        nat_query = """
+        SELECT nationality FROM players_by_nationality LIMIT 1000
+        """
+        nat_result = dao.session.execute(dao.session.prepare(nat_query))
+        nationalities_set = set()
+        for row in nat_result:
+            if row.nationality and len(nationalities_set) < 100:
+                nationalities_set.add(row.nationality)
+        suggestions["nationalities"] = sorted(list(nationalities_set))
+        
+        # Top équipes
+        team_query = """
+        SELECT team_id, team_name FROM team_details_by_id LIMIT 50
+        """
+        team_result = dao.session.execute(dao.session.prepare(team_query))
+        suggestions["teams"] = [
+            {"team_id": row.team_id, "team_name": row.team_name} 
+            for row in team_result if row.team_name
+        ]
+        
+        return suggestions
+        
+    except Exception as e:
+        logger.error(f"Error getting search suggestions: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000, reload=True)

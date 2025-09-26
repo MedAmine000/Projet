@@ -35,6 +35,52 @@ CREATE TABLE IF NOT EXISTS players_by_team (
 );
 
 -- ========================================
+-- B2. ADVANCED PLAYER SEARCH
+-- ========================================
+
+-- Players by position for advanced search (partition by position)
+CREATE TABLE IF NOT EXISTS players_by_position (
+  position text,
+  player_id text,
+  player_name text,
+  nationality text,
+  team_id text,
+  team_name text,
+  birth_date date,
+  market_value_eur bigint,
+  PRIMARY KEY (position, player_id)
+);
+
+-- Players by nationality for advanced search (partition by nationality)
+CREATE TABLE IF NOT EXISTS players_by_nationality (
+  nationality text,
+  player_id text,
+  player_name text,
+  position text,
+  team_id text,
+  team_name text,
+  birth_date date,
+  market_value_eur bigint,
+  PRIMARY KEY (nationality, player_id)
+);
+
+-- Global player search index (for name-based searches)
+-- Uses a fixed partition key to enable LIKE queries and pagination
+CREATE TABLE IF NOT EXISTS players_search_index (
+  search_partition text,  -- Fixed value 'all' to group all players
+  player_name_lower text, -- Lowercase for case-insensitive search
+  player_id text,
+  player_name text,
+  position text,
+  nationality text,
+  team_id text,
+  team_name text,
+  birth_date date,
+  market_value_eur bigint,
+  PRIMARY KEY (search_partition, player_name_lower, player_id)
+) WITH CLUSTERING ORDER BY (player_name_lower ASC, player_id ASC);
+
+-- ========================================
 -- B. MARKET VALUE TIME-SERIES
 -- ========================================
 
